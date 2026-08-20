@@ -1,0 +1,44 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+
+# Datasets
+data/raw/
+data/interim/
+data/processed/
+*.h5
+*.hdf5
+*.npy
+*.npz
+*.csv
+*.parquet
+*.zip
+*.tar
+*.tar.gz
+
+# ML artifacts
+models/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# Experiment outputs
+runs/
+logs/
+.ipynb_checkpoints/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
