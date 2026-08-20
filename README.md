@@ -1,2 +1,13 @@
-# DAS-Physical-Threat-Detection
-Self-supervised distributed acoustic sensing (DAS) framework for physical-threat and anomaly detection in fiber-optic cables, with cross-domain evaluation on terrestrial and submarine cable data.
+## Overview
+
+This repository contains the implementation and experimental framework for
+investigating self-supervised spatiotemporal representation learning for
+physical-threat and anomaly detection using Distributed Acoustic Sensing (DAS).
+
+The research focuses on whether representations learned from large-scale
+unlabeled DAS recordings can improve physical-event detection when labeled
+security-relevant data are limited.
+
+The study evaluates classical machine-learning baselines, supervised deep
+learning models, self-supervised masked reconstruction, anomaly detection,
+label-efficiency, cross-domain transfer, and robustness.
