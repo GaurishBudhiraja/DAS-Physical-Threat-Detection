@@ -1,0 +1,11 @@
+{
+  "representation": "H1-H4 + H9",
+  "n_features": 2900,
+  "mean_accuracy": 0.9191163490659152,
+  "mean_threat_precision": 0.912296768431718,
+  "mean_threat_recall": 0.835196639286041,
+  "mean_threat_f1": 0.8705002721418383,
+  "mean_auc": 0.9600180268025886,
+  "total_false_proximity_alerts": 1845,
+  "total_missed_threats": 4210
+}

@@ -1,4 +1,5 @@
 import numpy as np
+import os
 from sklearn.model_selection import train_test_split
 from collections import Counter
 from sklearn.model_selection import KFold, StratifiedKFold
@@ -89,6 +90,8 @@ class TripletReducer:
             - "time": Average across time dimension only, keeping channel information.
             - "channel": Average across channel dimension only, keeping time information.
             - "time_channel": Average across both time and channel dimensions.
+            - "spatial_features": Preserve spatial statistics for each frequency band.
+            - "spatial_spectral_features": H1 spatial statistics plus compact spectral descriptors.
             - True: Equivalent to "time_channel" for backward compatibility.
             - False: Equivalent to "none" for backward compatibility.
         - apply_log: If True, apply np.log to the reduced X while avoiding NaNs.
@@ -110,6 +113,27 @@ class TripletReducer:
         self.use_mid_target = use_mid_target
         self.sample_seconds = sample_seconds
         self.center_truth = center_truth
+
+        # Load exact frequency-band boundaries used by the dataset.
+        # The 100 bands are logarithmically spaced and already exclude
+        # the 49-51 Hz interference region.
+        fbands_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "data",
+            "fbands.csv"
+        )
+
+        fbands = np.loadtxt(fbands_path, delimiter=",")
+
+        if fbands.shape != (100, 2):
+            raise ValueError(
+                f"Expected fbands.csv with shape (100, 2), got {fbands.shape}"
+            )
+
+        # Geometric centers are appropriate for logarithmically spaced bands.
+        self.frequency_centers = np.sqrt(
+            fbands[:, 0] * fbands[:, 1]
+        )
 
         # Sort the triplets chronologically before applying any offset and track the original indices
         self._sort_triplets()
@@ -175,46 +199,569 @@ class TripletReducer:
             # Average across channels for each sample, then concatenate over time
             # Resulting in a 1D array of shape (n_samples_per_group * n_columns,)
             return np.array([np.mean(x, axis=0) for x in group_X]).flatten()
+        elif self.average_signals == "spatial_spectral_features":
+            # H2:
+            # Add compact spectral descriptors to the H1 spatial representation.
+            #
+            # H1:
+            #   5 spatial statistics x 100 frequency bands = 500/frame
+            #
+            # H2:
+            #   centroid, spread, entropy, roll-off, slope = 5/frame
+            #
+            # Five 10-second frames are concatenated by reduce_triplets(),
+            # producing 5 x (500 + 5) = 2525 features.
+
+            combined_features = []
+
+            frequencies = self.frequency_centers
+            eps = self.epsilon
+
+            for x in group_X:
+
+                # -----------------------------
+                # H1 spatial features
+                # -----------------------------
+                mean = np.mean(x, axis=0)
+                std = np.std(x, axis=0)
+                maximum = np.max(x, axis=0)
+                median = np.median(x, axis=0)
+                value_range = np.ptp(x, axis=0)
+
+                spatial_features = np.concatenate([
+                    mean,
+                    std,
+                    maximum,
+                    median,
+                    value_range
+                ])
+
+                # -----------------------------
+                # H2 spectral features
+                # -----------------------------
+                # Spatially average the log-energy spectrum.
+                spectrum = np.mean(x, axis=0)
+
+                # Convert log-energy to relative energy.
+                # Subtracting the maximum prevents overflow.
+                relative_energy = np.exp(
+                    spectrum - np.max(spectrum)
+                )
+
+                total_energy = np.sum(relative_energy)
+
+                if total_energy <= eps:
+                    weights = np.full(
+                        len(relative_energy),
+                        1.0 / len(relative_energy)
+                    )
+                else:
+                    weights = relative_energy / total_energy
+
+                # 1. Spectral centroid
+                centroid = np.sum(
+                    weights * frequencies
+                )
+
+                # 2. Spectral spread
+                spread = np.sqrt(
+                    np.sum(
+                        weights * (frequencies - centroid) ** 2
+                    )
+                )
+
+                # 3. Normalized spectral entropy
+                entropy = -np.sum(
+                    weights * np.log(weights + eps)
+                ) / np.log(len(weights))
+
+                # 4. 85% spectral roll-off
+                cumulative_energy = np.cumsum(weights)
+
+                rolloff_index = np.searchsorted(
+                    cumulative_energy,
+                    0.85
+                )
+
+                rolloff_index = min(
+                    rolloff_index,
+                    len(frequencies) - 1
+                )
+
+                rolloff = frequencies[rolloff_index]
+
+                # 5. Spectral slope
+                # Overall spectral tilt in log-frequency space.
+                log_frequencies = np.log(frequencies)
+
+                spectral_slope = np.polyfit(
+                    log_frequencies,
+                    spectrum,
+                    1
+                )[0]
+
+                spectral_features = np.array([
+                    centroid,
+                    spread,
+                    entropy,
+                    rolloff,
+                    spectral_slope
+                ])
+
+                combined_features.append(
+                    np.concatenate([
+                        spatial_features,
+                        spectral_features,
+                    ])
+                )
+
+            return np.array(
+                combined_features
+            ).flatten()
+
+        elif self.average_signals == "spatial_spectral_coherence_features":
+            # H3:
+            # Add spatial morphology and adjacent-channel coherence
+            # descriptors to the cumulative H1 + H2 representation.
+            #
+            # Per frame:
+            #   H1 = 500 spatial statistics
+            #   H2 =   5 spectral descriptors
+            #   H3 =   5 spatial-order descriptors
+            #
+            # Total = 510 features/frame.
+            #
+            # Five frames are concatenated by reduce_triplets(),
+            # producing 5 x 510 = 2550 features.
+
+            combined_features = []
+            h3_feature_sequence = []
+
+            for x in group_X:
+
+                # ---------------------------------------------------------
+                # H1: spatial statistics
+                # ---------------------------------------------------------
+                mean = np.mean(x, axis=0)
+                std = np.std(x, axis=0)
+                maximum = np.max(x, axis=0)
+                median = np.median(x, axis=0)
+                value_range = np.ptp(x, axis=0)
+
+                spatial_features = np.concatenate([
+                    mean,
+                    std,
+                    maximum,
+                    median,
+                    value_range
+                ])
+
+                # ---------------------------------------------------------
+                # H2: spectral descriptors
+                # ---------------------------------------------------------
+                spectrum = np.mean(x, axis=0)
+
+                frequencies = self.frequency_centers
+                eps = self.epsilon
+
+                relative_energy = np.exp(
+                    spectrum - np.max(spectrum)
+                )
+
+                total_energy = np.sum(relative_energy)
+
+                if total_energy <= eps:
+                    weights = np.full(
+                        len(relative_energy),
+                        1.0 / len(relative_energy)
+                    )
+                else:
+                    weights = (
+                        relative_energy / total_energy
+                    )
+
+                centroid = np.sum(
+                    weights * frequencies
+                )
+
+                spread = np.sqrt(
+                    np.sum(
+                        weights *
+                        (frequencies - centroid) ** 2
+                    )
+                )
+
+                entropy = -np.sum(
+                    weights *
+                    np.log(weights + eps)
+                ) / np.log(len(weights))
+
+                cumulative_energy = np.cumsum(weights)
+
+                rolloff_index = np.searchsorted(
+                    cumulative_energy,
+                    0.85
+                )
+
+                rolloff_index = min(
+                    rolloff_index,
+                    len(frequencies) - 1
+                )
+
+                rolloff = frequencies[rolloff_index]
+
+                log_frequencies = np.log(frequencies)
+
+                spectral_slope = np.polyfit(
+                    log_frequencies,
+                    spectrum,
+                    1
+                )[0]
+
+                spectral_features = np.array([
+                    centroid,
+                    spread,
+                    entropy,
+                    rolloff,
+                    spectral_slope
+                ])
+
+                # ---------------------------------------------------------
+                # H3: compact spatial morphology / coherence
+                # ---------------------------------------------------------
+                #
+                # Instead of retaining 5 spatial descriptors for all
+                # 100 frequency bands (500 features/frame), compress
+                # each descriptor into 5 frequency-aware statistics:
+                #
+                #   1. Low-frequency mean
+                #   2. Mid-frequency mean
+                #   3. High-frequency mean
+                #   4. Global mean
+                #   5. Global standard deviation
+                #
+                # Five descriptors x five summaries = 25 features/frame.
+                #
+                # This preserves frequency-dependent spatial information
+                # while substantially reducing the dimensionality of H3.
+
+                channel_positions = np.arange(
+                    x.shape[0],
+                    dtype=np.float64
+                )
+
+                denominator = max(
+                    x.shape[0] - 1,
+                    1
+                )
+
+                h3_descriptor_matrix = np.empty(
+                    (5, x.shape[1]),
+                    dtype=np.float64
+                )
+
+                for band in range(x.shape[1]):
+
+                    spatial_profile = (
+                        x[:, band].astype(np.float64)
+                    )
+
+                    # Shift to positive values while preserving
+                    # relative spatial energy distribution.
+                    relative_spatial_energy = np.exp(
+                        spatial_profile -
+                        np.max(spatial_profile)
+                    )
+
+                    spatial_total = np.sum(
+                        relative_spatial_energy
+                    )
+
+                    if spatial_total <= eps:
+                        spatial_weights = np.full(
+                            x.shape[0],
+                            1.0 / x.shape[0]
+                        )
+                    else:
+                        spatial_weights = (
+                            relative_spatial_energy /
+                            spatial_total
+                        )
+
+                    # 1. Spatial centroid
+                    spatial_centroid_raw = np.sum(
+                        spatial_weights *
+                        channel_positions
+                    )
+
+                    spatial_centroid = (
+                        spatial_centroid_raw /
+                        denominator
+                    )
+
+                    # 2. Spatial spread
+                    spatial_spread = np.sqrt(
+                        np.sum(
+                            spatial_weights *
+                            (
+                                channel_positions -
+                                spatial_centroid_raw
+                            ) ** 2
+                        )
+                    ) / denominator
+
+                    # 3. Spatial entropy
+                    spatial_entropy = -np.sum(
+                        spatial_weights *
+                        np.log(
+                            spatial_weights + eps
+                        )
+                    ) / np.log(x.shape[0])
+
+                    # 4. Spatial gradient energy
+                    differences = np.diff(
+                        spatial_profile
+                    )
+
+                    profile_scale = (
+                        np.var(spatial_profile) +
+                        eps
+                    )
+
+                    gradient_energy = (
+                        np.mean(
+                            differences ** 2
+                        ) / profile_scale
+                    )
+
+                    # 5. Lag-1 spatial autocorrelation
+                    centered = (
+                        spatial_profile -
+                        np.mean(spatial_profile)
+                    )
+
+                    autocorr_denominator = np.sum(
+                        centered ** 2
+                    )
+
+                    if autocorr_denominator <= eps:
+                        spatial_autocorrelation = 0.0
+                    else:
+                        spatial_autocorrelation = (
+                            np.sum(
+                                centered[:-1] *
+                                centered[1:]
+                            ) /
+                            autocorr_denominator
+                        )
+
+                    h3_descriptor_matrix[:, band] = [
+                        spatial_centroid,
+                        spatial_spread,
+                        spatial_entropy,
+                        gradient_energy,
+                        spatial_autocorrelation
+                    ]
+
+                # ---------------------------------------------------------
+                # Frequency-aware compression
+                # ---------------------------------------------------------
+                n_bands = x.shape[1]
+
+                low_end = max(
+                    1,
+                    n_bands // 3
+                )
+
+                mid_end = max(
+                    low_end + 1,
+                    (2 * n_bands) // 3
+                )
+
+                low_features = np.mean(
+                    h3_descriptor_matrix[:, :low_end],
+                    axis=1
+                )
+
+                mid_features = np.mean(
+                    h3_descriptor_matrix[:, low_end:mid_end],
+                    axis=1
+                )
+
+                high_features = np.mean(
+                    h3_descriptor_matrix[:, mid_end:],
+                    axis=1
+                )
+
+                global_mean = np.mean(
+                    h3_descriptor_matrix,
+                    axis=1
+                )
+
+                global_std = np.std(
+                    h3_descriptor_matrix,
+                    axis=1
+                )
+
+                h3_features = np.concatenate([
+                    low_features,
+                    mid_features,
+                    high_features,
+                    global_mean,
+                    global_std
+                ]).astype(
+                    np.float32
+                )
+
+                frame_features = np.concatenate([
+                    spatial_features,
+                    spectral_features,
+                    h3_features
+                ])
+
+                combined_features.append(frame_features)
+                h3_feature_sequence.append(h3_features)
+
+            # ---------------------------------------------------------
+            # H4: Temporal dynamics
+            # ---------------------------------------------------------
+
+            h3_matrix = np.asarray(
+                h3_feature_sequence,
+                dtype=np.float64
+            )
+
+            temporal_mean = np.mean(
+                h3_matrix,
+                axis=0
+            )
+
+            temporal_std = np.std(
+                h3_matrix,
+                axis=0
+            )
+
+            temporal_range = (
+                np.max(h3_matrix, axis=0)
+                - np.min(h3_matrix, axis=0)
+            )
+
+            time_index = np.arange(
+                h3_matrix.shape[0],
+                dtype=np.float64
+            )
+
+            temporal_slope = np.polyfit(
+                time_index,
+                h3_matrix,
+                1
+            )[0]
+
+            temporal_delta = np.diff(
+                h3_matrix,
+                axis=0
+            )
+
+            mean_abs_change = np.mean(
+                np.abs(temporal_delta),
+                axis=0
+            )
+
+            change_std = np.std(
+                temporal_delta,
+                axis=0
+            )
+
+            temporal_features = np.concatenate([
+                temporal_mean,
+                temporal_std,
+                temporal_range,
+                temporal_slope,
+                mean_abs_change,
+                change_std
+            ])
+
+            frame_features = np.asarray(
+                combined_features,
+                dtype=np.float32
+            ).flatten()
+
+            return np.concatenate([
+                frame_features,
+                temporal_features.astype(np.float32)
+            ])
+
         elif self.average_signals == "time_channel":
-            # Average across both time and channels
+
             return np.mean(group_X, axis=(0, 1))
         else:
-            raise ValueError("Invalid value for average_signals. Expected 'none', 'time', 'channel', or 'time_channel'.")
+            raise ValueError("Invalid value for average_signals. Expected "
+                "'none', 'time', 'channel', 'spatial_features', "
+                "'spatial_spectral_features' or 'time_channel'.")
 
     # @time_it
     def reduce_triplets(self):
         """Performs the reduction of triplets based on n_seconds and n_overlapping_seconds."""
         n_samples_per_group = self.n_seconds // self.sample_seconds
-        # n_overlap_samples = (self.n_overlapping_seconds // self.sample_seconds) if self.n_overlapping_seconds else 0
 
         # Handle negative n_overlapping_seconds
         if self.n_overlapping_seconds is not None:
             if self.n_overlapping_seconds < 0:
-                n_overlap_samples = n_samples_per_group + (self.n_overlapping_seconds // self.sample_seconds)
+                n_overlap_samples = (
+                    n_samples_per_group
+                    + (self.n_overlapping_seconds // self.sample_seconds)
+                )
             else:
-                n_overlap_samples = self.n_overlapping_seconds // self.sample_seconds
+                n_overlap_samples = (
+                    self.n_overlapping_seconds // self.sample_seconds
+                )
         else:
             n_overlap_samples = 0
 
-        reduced_X, reduced_y, reduced_dt, reduced_ships = [], [], [], []
+        step = n_samples_per_group - n_overlap_samples
+
+        if step <= 0:
+            raise ValueError(
+                "Invalid overlap: step size must be greater than zero."
+            )
+
+        # Calculate number of complete groups.
+        n_groups = max(
+            0,
+            1 + (len(self.X) - n_samples_per_group) // step
+        )
+
+        # Allocate output once instead of building a large Python list.
+        reduced_X = None
+        reduced_y = np.empty(n_groups, dtype=np.int8)
+        reduced_dt = []
+        reduced_ships = [] if self.ships else None
+
         i = 0
+        group_idx = 0
 
         while i < len(self.X):
             group_X = self.X[i:i + n_samples_per_group]
             group_y = self.y[i:i + n_samples_per_group]
             group_dt = self.dt[i:i + n_samples_per_group]
-            group_ships = self.ships[i:i + n_samples_per_group] if self.ships else []
+
+            if self.ships:
+                group_ships = self.ships[i:i + n_samples_per_group]
+            else:
+                group_ships = []
 
             if len(group_X) < n_samples_per_group:
-                break  # Skip incomplete groups at the end
+                break
 
-            # Apply logarithmic transformation to each sample in group_X if needed
+            # Apply logarithmic transformation exactly as before.
             if self.apply_log:
-                group_X = [np.log(np.maximum(sample, self.epsilon)) for sample in group_X]
+                group_X = [
+                    np.log(np.maximum(sample, self.epsilon))
+                    for sample in group_X
+                ]
 
-            # Apply averaging method based on the selected option
+            # Apply selected feature representation.
             avg_X = self._apply_averaging(group_X)
-
 
             if self.join_higher_classes:
                 group_y = np.clip(group_y, 0, 1)
@@ -224,32 +771,49 @@ class TripletReducer:
                     mid_index = len(group_y) // 2
                     min_y = group_y[mid_index]
                 else:
-                    min_y = np.bincount(group_y).argmax()
+                    min_y = np.bincount(group_y.astype(np.int64)).argmax()
             else:
-               min_y = min(group_y)
+                min_y = min(group_y)
 
-
-
-
-            # Take the oldest datetime
+            # Take the oldest datetime.
             oldest_dt = min(group_dt)
 
-            reduced_X.append(avg_X)
-            reduced_y.append(min_y)
+            # Allocate final feature matrix only once.
+            if reduced_X is None:
+                avg_X = np.asarray(avg_X, dtype=np.float32)
+
+                reduced_X = np.empty(
+                    (n_groups, avg_X.shape[0]),
+                    dtype=np.float32
+                )
+
+            # Write directly into preallocated array.
+            reduced_X[group_idx] = avg_X
+            reduced_y[group_idx] = min_y
             reduced_dt.append(oldest_dt)
 
             if self.ships:
-                closest_list = min(group_ships, key=lambda ship_list: min(ship['distance'] for ship in ship_list))
+                closest_list = min(
+                    group_ships,
+                    key=lambda ship_list: min(
+                        ship['distance'] for ship in ship_list
+                    )
+                )
                 reduced_ships.append(closest_list)
 
-            i += n_samples_per_group - n_overlap_samples
+            group_idx += 1
+            i += step
 
+        # Safety trimming.
+        if reduced_X is not None:
+            reduced_X = reduced_X[:group_idx]
+
+        reduced_y = reduced_y[:group_idx]
 
         if self.ships:
-            return np.array(reduced_X), np.array(reduced_y), reduced_dt, reduced_ships
-        return np.array(reduced_X), np.array(reduced_y), reduced_dt
+            return reduced_X, reduced_y, reduced_dt, reduced_ships
 
-
+        return reduced_X, reduced_y, reduced_dt
 
 class TripletRegressionReducer:
     def __init__(self, X, y, dt, ships=None, n_seconds=10, n_overlapping_seconds=None,

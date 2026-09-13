@@ -1,0 +1,22 @@
+{
+  "accuracy": 0.9117391362499498,
+  "threat_precision": 0.8689949035007102,
+  "threat_recall": 0.8572841541314651,
+  "threat_f1": 0.8630998070659501,
+  "mean_fold_roc_auc": 0.9598303936425179,
+  "mean_fold_brier_raw": 0.0661235465683919,
+  "mean_fold_brier_calibrated": 0.06298756744704519,
+  "true_threats": 24265,
+  "correct_threats": 20802,
+  "missed_threats": 3463,
+  "false_proximity_alerts": 3136,
+  "correct_non_threats": 47366,
+  "total": 74767,
+  "tp": 20802,
+  "fn": 3463,
+  "fp": 3136,
+  "tn": 47366,
+  "persistence_window": 3,
+  "persistence_required": 2,
+  "minimum_validation_threat_recall": 0.9
+}

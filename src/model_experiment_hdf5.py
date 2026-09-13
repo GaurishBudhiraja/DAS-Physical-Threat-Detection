@@ -213,11 +213,12 @@ def parse_args():
         '--average_signals',
         type=str,
         default='time_channel',
-        choices=['none', 'time', 'channel', 'time_channel'],
+        choices=['none', 'time', 'channel', 'spatial_features', 'spatial_spectral_features', 'spatial_spectral_coherence_features', 'time_channel'],
         help=(
             "How to aggregate signals: none (no averaging), "
             "time (average over time per channel), "
             "channel (average over channels per time step), "
+            "spatial_features (compute spatial statistics), "
             "time_channel (average over both time and channels). "
             "Only 'channel' and 'time_channel' have been tested so far."
         )
@@ -610,6 +611,10 @@ def main():
         )
 
     X_reduced, y_reduced, dt_reduced = reducer.reduce_triplets()
+
+    del reducer
+    del X
+
     logger.debug(format_array_for_log(X_reduced, "HDF5 X_reduced"))
     # Debug: show reduced targets and timestamps for grouping logic
     logger.info(format_array_for_log(y_reduced, "TripletReducer output y_reduced"))

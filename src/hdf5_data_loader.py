@@ -12,7 +12,7 @@ class HDF5DataLoader:
 
         try:
             with h5py.File(self.file_path, 'r') as f:
-                X = np.array(f['X'])
+                X = np.array(f['X'], dtype=np.float32)
                 y = np.array(f['y'])
                 # datetimes are stored as bytes, decode to str
                 datetimes = np.array([dt.decode('utf-8') for dt in f['datetimes']])

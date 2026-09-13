@@ -1,0 +1,57 @@
+{
+  "experiment": "FINAL_H1_H9",
+  "evaluation": "10-fold leave-one-day-out",
+  "n_samples": 74767,
+  "n_days": 10,
+  "pre_h8_features": 2900,
+  "h8_top_k": 1000,
+  "final_classifier_features": 1001,
+  "h5_auxiliary": "fold-contained Ridge predicted distance",
+  "h6_calibration": "inner-validation isotonic regression",
+  "h6_min_threat_recall": 0.9,
+  "h7_persistence_window": 3,
+  "h7_persistence_required": 2,
+  "accuracy": 0.9128225019059211,
+  "threat_precision": 0.8765861732377032,
+  "threat_recall": 0.8512260457449,
+  "threat_f1": 0.8637199966546792,
+  "non_threat_f1": 0.9359133187815861,
+  "macro_f1": 0.8998166577181327,
+  "weighted_f1": 0.9124835842541956,
+  "roc_auc": 0.9569265060963896,
+  "pr_auc": 0.9411811933714431,
+  "brier_raw": 0.06666104210025382,
+  "brier_calibrated": 0.0633870338697766,
+  "false_proximity_alerts": 2908,
+  "missed_threats": 3610,
+  "correct_threats": 20655,
+  "correct_non_threats": 47594,
+  "confusion_matrix_labels": [
+    "threat",
+    "non_threat"
+  ],
+  "confusion_matrix": [
+    [
+      20655,
+      3610
+    ],
+    [
+      2908,
+      47594
+    ]
+  ],
+  "mean_fold_accuracy": 0.9082661488587425,
+  "std_fold_accuracy": 0.03325040969665891,
+  "mean_fold_threat_precision": 0.8686532058432178,
+  "std_fold_threat_precision": 0.057663843909364194,
+  "mean_fold_threat_recall": 0.8610861368982763,
+  "std_fold_threat_recall": 0.05246558422971879,
+  "mean_fold_threat_f1": 0.862113187932712,
+  "std_fold_threat_f1": 0.02653947119651127,
+  "mean_fold_auc": 0.960016974796431,
+  "std_fold_auc": 0.013641290227748112,
+  "mean_fold_pr_auc": 0.9448722968214897,
+  "std_fold_pr_auc": 0.015465758396950592,
+  "mean_threshold": 0.29300000000000004,
+  "std_threshold": 0.05982381539896039
+}
