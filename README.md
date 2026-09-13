@@ -29,28 +29,29 @@ GitHub: [GaurishBudhiraja](https://github.com/GaurishBudhiraja)
 
 # Overview
 
-Submarine optical-fiber cables form a critical component of global communications infrastructure. Although these cables are designed primarily for data transmission, the optical fiber itself can also act as a distributed sensing medium.
+Submarine optical-fiber cables form a critical component of global communications infrastructure. Although these cables are primarily designed for data transmission, the optical fiber can also function as a distributed sensing medium.
 
-**Distributed Acoustic Sensing (DAS)** transforms an optical fiber into a dense array of virtual acoustic sensing locations. Mechanical disturbances near the cable generate detectable changes in the optical signal, making DAS suitable for continuous monitoring of physical activity around submarine cables.
+**Distributed Acoustic Sensing (DAS)** transforms an optical fiber into a dense array of virtual acoustic sensing locations. Mechanical disturbances occurring near the cable generate measurable changes in the optical signal, allowing the fiber to continuously sense physical activity along its route.
 
-This research develops and evaluates a machine-learning framework for **physical vessel-threat detection around submarine optical-fiber cables**.
+This repository presents a machine-learning framework for **physical vessel-threat detection around submarine optical-fiber cables using Distributed Acoustic Sensing**.
 
-The central objective is to determine whether the spatial, spectral, morphological, and temporal structure contained in DAS measurements can be exploited to improve detection of vessels operating within a defined proximity to the cable.
+The research investigates whether the spatial, spectral, morphological, coherence-based, and temporal structure contained within DAS measurements can improve detection of vessels operating within a defined proximity to a submarine cable.
 
-The research is organized into **nine hypotheses (H1–H9)** and culminates in an integrated machine-learning pipeline combining:
+The research is organized into **nine experimental hypotheses (H1–H9)** and culminates in an integrated physical-threat detection pipeline combining:
 
 - Spatial feature engineering
 - Spectral characterization
-- Spatial morphology and channel coherence
+- Spatial morphology
+- Adjacent-channel coherence
 - Temporal dynamics
-- Higher-order temporal derivatives
-- Fold-contained feature selection
+- Higher-order temporal dynamics
+- Feature selection
 - Distance-aware auxiliary learning
 - Probability calibration
 - Threat-aware decision making
 - Temporal persistence
 
-The final system is evaluated using **10-fold leave-one-day-out cross-validation**, where each complete recording day is held out as an unseen test set.
+The final system is evaluated using **10-fold leave-one-day-out cross-validation**, with each complete recording day held out as an unseen test fold.
 
 ---
 
@@ -60,68 +61,68 @@ The primary research question is:
 
 > **Can engineered spatiotemporal representations of Distributed Acoustic Sensing measurements improve the detection of physical vessel threats around submarine optical-fiber cables compared with a conventional channel-averaged XGBoost baseline?**
 
-The research focuses exclusively on **physical sensing and vessel-threat detection**.
+The research focuses exclusively on the **physical sensing layer**.
 
-It does **not** attempt to detect network-layer attacks such as:
+This project does not attempt to detect network-layer attacks such as:
 
 - Man-in-the-middle attacks
 - Packet injection
 - Network sniffing
-- Traffic interception
 - Protocol attacks
+- Network traffic manipulation
 
 The target phenomenon is a **physical vessel presence/proximity event detected through DAS measurements**.
 
 ---
 
-# System Concept
+# System Architecture
 
-The complete research pipeline follows:
+The final research system follows a staged architecture:
 
 ```text
-                    SUBMARINE DAS DATA
-                           │
-                           ▼
-              Original DAS Preprocessing
-                           │
-                           ▼
-                 5-Frame Temporal Window
-                           │
-                           ▼
-              ┌─────────────────────────┐
-              │ H1 Spatial Features     │
-              │ H2 Spectral Features    │
-              │ H3 Spatial Coherence    │
-              └────────────┬────────────┘
-                           │
-                           ▼
-                  H4 Temporal Dynamics
-                           │
-                           ▼
-               H9 Higher-Order Dynamics
-                           │
-                           ▼
-                H8 Feature Selection
-                    Top-1000 Features
-                           │
-                           ├───────────────┐
-                           │               │
-                           ▼               ▼
-                    XGBoost Input    H5 Auxiliary
-                                     Distance Branch
-                           │               │
-                           └───────┬───────┘
-                                   ▼
-                             XGBoost Classifier
-                                   │
-                                   ▼
-                        H6 Probability Calibration
-                                   │
-                                   ▼
-                       Threat-Aware Thresholding
-                                   │
-                                   ▼
+                         SUBMARINE DAS DATA
+                                  │
+                                  ▼
+                       Original DAS Preprocessing
+                                  │
+                                  ▼
+                        5-Frame Temporal Window
+                                  │
+                                  ▼
+                    ┌───────────────────────────┐
+                    │ H1 — Spatial Features    │
+                    │ H2 — Spectral Features   │
+                    │ H3 — Spatial Coherence   │
+                    └─────────────┬─────────────┘
+                                  │
+                                  ▼
+                       H4 — Temporal Dynamics
+                                  │
+                                  ▼
+                    H9 — Higher-Order Dynamics
+                                  │
+                                  ▼
+                       H8 — Feature Selection
+                            Top-1000 Features
+                                  │
+                    ┌─────────────┴─────────────┐
+                    │                           │
+                    ▼                           ▼
+             XGBoost Features          H5 Distance Branch
+                    │                           │
+                    └─────────────┬─────────────┘
+                                  │
+                                  ▼
+                         XGBoost Classifier
+                                  │
+                                  ▼
+                     H6 Probability Calibration
+                                  │
+                                  ▼
+                    Threat-Aware Decision Threshold
+                                  │
+                                  ▼
                        H7 Temporal Persistence
-                                   │
-                                   ▼
-                         PHYSICAL THREAT ALERT
+                                  │
+                                  ▼
+                       PHYSICAL THREAT ALERT
