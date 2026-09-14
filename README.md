@@ -8,8 +8,6 @@
 ![XGBoost](https://img.shields.io/badge/ML-XGBoost-orange)
 ![DAS](https://img.shields.io/badge/Sensing-DAS-6f42c1) ![Machine
 Learning](https://img.shields.io/badge/Domain-Machine%20Learning-blue)
-![Research](https://img.shields.io/badge/Research-IEEE%20Style-red)
-![Status](https://img.shields.io/badge/Status-Research%20Complete-success)
 ![License](https://img.shields.io/badge/License-GPLv3-blue)
 
 </p>
