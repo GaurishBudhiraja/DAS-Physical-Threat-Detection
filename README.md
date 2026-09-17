@@ -1,297 +1,1438 @@
-# Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables
+# DAS Physical Threat Detection for Submarine Optical-Fiber Cables
 
-[![JSTARS article](https://img.shields.io/badge/IEEE%20JSTARS%20%28accepted%29-10.1109%2FJSTARS.2026.3716768-00629B)](https://doi.org/10.1109/JSTARS.2026.3716768)
-[![Dataset](https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.15611778-1682D4)](https://doi.org/10.5281/zenodo.15611778)
-[![ArXiV Preprint](https://img.shields.io/badge/ArXiV%20Preprint-submitted%20to%20Scientific%20Data-orange)](https://doi.org/10.48550/arXiv.2607.28306)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+### A Spatiotemporal Machine-Learning Framework for Physical Vessel-Threat Detection Using Distributed Acoustic Sensing
 
+<p align="center">
 
-## Repository purpose
+![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
+![XGBoost](https://img.shields.io/badge/ML-XGBoost-orange)
+![DAS](https://img.shields.io/badge/Sensing-DAS-6f42c1) ![Machine
+Learning](https://img.shields.io/badge/Domain-Machine%20Learning-blue)
+![License](https://img.shields.io/badge/License-GPLv3-blue)
 
-This repository provides the maintained companion software and reproducibility resources for our research group's work on vessel monitoring using distributed acoustic sensing (DAS) in submarine optical fiber cables. It supports:
+</p>
 
-1. The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
-2. The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
-3. The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/10.48550/arXiv.2607.28306) (submitted to be considered for publication as a Data Descriptor in the *Scientific Data* journal).
+------------------------------------------------------------------------
 
-The complete dataset and its definitive documentation are distributed through [Zenodo](https://doi.org/10.5281/zenodo.15611778). This repository contains complementary source code, reproducibility workflows, plotting tools, frequency-band definitions, a small demonstration dataset and supplementary resources, and will be updated with additional source-code tools and reproducibility material.
+## Author
 
-> **Contributions and bug reports are welcome.** This research software is under active development. If you find a bug, an incorrect calculation, misleading documentation, or a reproducibility problem, please report it through the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). Source-code contributions, tests, documentation corrections, and independently reproduced results are especially welcome.
+**Gaurish Budhiraja**  
+B.Tech Computer Science and Engineering  
+Vellore Institute of Technology, Chennai, India
 
-## Table of contents
+**Research Area:** Distributed Acoustic Sensing · Submarine Cable
+Protection · Machine Learning · Physical Threat Detection ·
+Spatiotemporal Signal Analysis
 
-- [Project summary](#project-summary)
-- [Dataset availability](#dataset-availability)
-- [Repository contents](#repository-contents)
-- [Usage and reproducibility workflows](#usage-and-reproducibility-workflows)
-  - [Installation](#installation)
-  - [Data partitioning recommendation](#data-partitioning-recommendation)
-  - [Generation of a day-wise k-fold train-test split](#generation-of-a-day-wise-k-fold-traintest-split)
-  - [Plot energy features and vessel distance](#plot-energy-features-and-vessel-distance)
-  - [Baseline AI/ML experiments](#baseline-aiml-experiments)
-- [Supplementary material](#supplementary-material)
-- [How to cite](#how-to-cite)
-- [Licenses](#licenses)
-- [Funding and acknowledgements](#funding-and-acknowledgements)
-- [Disclaimer](#disclaimer)
-- [Contact and issue reporting](#contact-and-issue-reporting)
+**GitHub:** https://github.com/GaurishBudhiraja
 
-## Project summary
+------------------------------------------------------------------------
 
-Submarine cables are critical infrastructure for global connectivity, but they are vulnerable to accidental damage and deliberate interference. Conventional vessel-monitoring technologies can be limited by sensing range, weather conditions, revisit times or dependence on vessel cooperation.
+# Overview
 
-This project investigates the use of DAS on a pre-existing ocean-bottom telecommunications cable for continuous maritime monitoring and submarine-cable protection. DAS turns the optical fiber into a dense array of acoustic sensing positions, enabling machine-learning methods to detect nearby vessels and estimate their distance to the cable.
+Submarine optical-fiber cables form a critical component of global
+communications infrastructure. Although these cables are primarily
+designed for data transmission, the optical fiber can also function as a
+distributed sensing medium.
 
-The Marlinks-NS measurements were acquired over ten days using a 28 km submarine optical fiber cable. The released dataset contains processed spatial-spectral DAS features from a selected 2,553 m segment, together with timestamps, closest-vessel distance labels and AIS-derived vessel information.
+**Distributed Acoustic Sensing (DAS)** transforms an optical fiber into
+a dense array of virtual acoustic sensing locations. Mechanical
+disturbances occurring near the cable generate measurable changes in the
+optical signal, allowing the fiber to continuously sense physical
+activity along its route.
 
-The original raw DAS recordings, the precise cable route and other sensitive geographical details cannot be released because of data-owner and critical-infrastructure restrictions. Instead, the openly released dataset provides the processed features and metadata needed to reproduce the defined machine-learning tasks. See the [Zenodo](https://doi.org/10.5281/zenodo.15611778) documentation for the authoritative description of the acquisition, processing, data structure, limitations and permitted use.
+This repository presents a **spatiotemporal machine-learning framework
+for physical vessel-threat detection around submarine optical-fiber
+cables using Distributed Acoustic Sensing**.
 
-## Dataset availability
+The research investigates whether the spatial, spectral, morphological,
+coherence-based, and temporal structure contained within DAS
+measurements can improve detection of vessels operating within a defined
+proximity to a submarine cable.
 
-The complete released dataset is available from [Zenodo](https://doi.org/10.5281/zenodo.15611778):
+The research is organized into **nine experimental hypotheses (H1–H9)**
+and culminates in an integrated physical-threat detection pipeline
+combining:
 
-> **Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables**  
-> [https://doi.org/10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
+- Spatial feature engineering
+- Spectral characterization
+- Spatial morphology
+- Adjacent-channel coherence
+- Temporal dynamics
+- Higher-order temporal dynamics
+- Fold-contained feature selection
+- Distance-aware auxiliary learning
+- Probability calibration
+- Threat-aware decision making
+- Temporal persistence
 
-The [Zenodo record](https://doi.org/10.5281/zenodo.15611778) record is the authoritative source for:
+The final system is evaluated using **10-fold leave-one-day-out
+cross-validation**, with each complete recording day held out as an
+unseen test fold.
 
-- The complete processed HDF5 dataset.
-- The definitive dataset documentation and file inventory.
-- The HDF5 schema and field descriptions.
-- Acquisition, processing and ground-truth generation details.
-- Known limitations and usage considerations.
-- Dataset licensing and citation metadata.
-- Minimal standalone examples for inspecting, loading, validating and partitioning the data.
+------------------------------------------------------------------------
 
-This GitHub repository also retains `data/reduced_dataset_sensor_range_1440_1690.h5`, a 10-minute extract containing a representative vessel-crossing event. It is provided only as a lightweight demonstration asset for rapidly testing the repository scripts; it is not an alternative distribution of the complete dataset.
+# Research Objective
 
-The released HDF5 file contains 74,771 sample-aligned observations:
+The primary research question is:
 
-| Element     |                                                  Shape | Contents                                                                                                                                   |
-|-------------|-------------------------------------------------------:|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `X`         |                                    `(74771, 250, 100)` | DAS energy-band features, ordered as `(sample, spatial channel, frequency band)`                                                           |
-| `y`         |                                             `(74771,)` | Distance in meters to the closest AIS-reported vessel for each observation                                                                 |
-| `datetimes` |                                             `(74771,)` | UTC timestamps corresponding to each observation, formatted as `%Y-%m-%d %H:%M:%S%z` following Python’s `strftime` format-code conventions |
-| `ship_info` | HDF5 group containing three arrays of shape `(74771,)` | AIS-derived vessel type, length and beam of the closest vessel associated with each observation                                            |
+> **Can engineered spatiotemporal representations of Distributed
+> Acoustic Sensing measurements improve the detection of physical vessel
+> threats around submarine optical-fiber cables compared with a
+> conventional channel-averaged XGBoost baseline?**
 
-Thus, each sample consists of one `250 × 100` spatial-spectral feature matrix in `X`, one closest-vessel distance in `y`, the corresponding vessel attributes in `ship_info`, and one timestamp. The observations cover 16–25 June 2023 (UTC) and correspond to non-overlapping 10-second windows over a 2,553 m cable segment. The 100 spectral features are logarithmically spaced energy bands spanning 4–98 Hz, excluding 49–51 Hz.
+The research focuses exclusively on the **physical sensing layer**.
 
-Each feature value is obtained by summing the squared magnitudes of the one-sided, Blackman-windowed FFT coefficients within the corresponding frequency band. Three noisy spatial channels, with array indices `59`, `60` and `61`, were set to zero in the released feature matrices and should normally be excluded before model training or evaluation.
+This project does **not** attempt to detect network-layer attacks such
+as:
 
-The dataset supports two principal tasks:
+- Man-in-the-middle attacks
+- Packet injection
+- Network sniffing
+- Protocol attacks
+- Network traffic manipulation
 
-1. **Vessel detection:** binary classification obtained by applying a stated distance threshold to the continuous target.
-2. **Vessel-to-cable distance estimation:** regression using the continuous closest-vessel distance.
+The target phenomenon is a **physical vessel presence/proximity event
+detected through DAS measurements**.
 
-The numeric meanings of classes 0 and 1 depend on the configured threshold
-polarity; see the [experiment guide](docs/run-experiments.md#class-polarity-and-confusion-matrix-convention)
-for the class and confusion-matrix convention.
+------------------------------------------------------------------------
 
-For the complete and current technical description, refer to the documentation in the [Zenodo record](https://doi.org/10.5281/zenodo.15611778).
+# System Architecture
 
-## Repository contents
+The final research system follows a staged architecture:
 
-The main repository resources include:
-
-| Path                                                                  | Purpose                                                                      |
-|-----------------------------------------------------------------------|------------------------------------------------------------------------------|
-| `src/`                                                                | Dataset loading, partitioning, plotting, and reproducibility scripts         |
-| `models/`                                                             | Public baseline XGBoost classification and regression models                 |
-| `scripts/`                                                            | Maintained launchers for the best baseline experiment configurations         |
-| `docs/`                                                               | Experiment guides, model documentation, tutorial, and README build settings  |
-| `build/`                                                              | Ignored generated documentation, PDFs, and downloaded badge images           |
-| `data/reduced_dataset_sensor_range_1440_1690.h5`                      | Ten-minute demonstration extract                                             |
-| `data/fbands.csv`                                                     | Frequency-band boundaries used for feature extraction                        |
-| `data/combined_plot_interval_20230616T155500_20230616T160500.png`     | Example visualization generated from the demonstration data                  |
-| `requirements.txt`                                                    | Python package requirements                                                  |
-| `Makefile`                                                            | Builds README documentation and generated assets under `build/`              |
-| `logos/`                                                              | Funding and acknowledgment graphics                                          |
-| `LICENSE`                                                             | License applying to the repository software                                  |
-
-This repository is the actively maintained location for software updates and extended reproducibility material. The complete released data remain versioned and preserved in [Zenodo](https://doi.org/10.5281/zenodo.15611778).
-
-
-## Usage and reproducibility workflows
-
-### Installation
-
-Clone the repository and create an isolated environment:
-
-```bash
-git clone https://github.com/UAH-PSI/das-vessel-detection.git
-cd das-vessel-detection
-
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+``` text
+                         SUBMARINE DAS DATA
+                                  │
+                                  ▼
+                       Original DAS Preprocessing
+                                  │
+                                  ▼
+                        5-Frame Temporal Window
+                                  │
+                                  ▼
+                    ┌───────────────────────────┐
+                    │ H1 — Spatial Features    │
+                    │ H2 — Spectral Features   │
+                    │ H3 — Spatial Coherence   │
+                    └─────────────┬─────────────┘
+                                  │
+                                  ▼
+                       H4 — Temporal Dynamics
+                                  │
+                                  ▼
+                    H9 — Higher-Order Dynamics
+                                  │
+                                  ▼
+                       H8 — Feature Selection
+                            Top-1000 Features
+                                  │
+                    ┌─────────────┴─────────────┐
+                    │                           │
+                    ▼                           ▼
+             XGBoost Features          H5 Auxiliary
+                                     Distance Branch
+                    │                           │
+                    └─────────────┬─────────────┘
+                                  │
+                                  ▼
+                         XGBoost Classifier
+                                  │
+                                  ▼
+                     H6 Probability Calibration
+                                  │
+                                  ▼
+                    Threat-Aware Decision Threshold
+                                  │
+                                  ▼
+                       H7 Temporal Persistence
+                                  │
+                                  ▼
+                       PHYSICAL THREAT ALERT
 ```
 
-On Windows PowerShell, activate the environment with:
+Final pipeline:
 
-```powershell
-.\.venv\Scripts\Activate.ps1
+``` text
+H1 + H2 + H3 + H4 + H9
+            ↓
+     H8 Feature Selection
+            ↓
+       H5 Auxiliary
+    Distance Prediction
+            ↓
+       XGBoost Classifier
+            ↓
+      H6 Calibration
+            ↓
+    Threat-Aware Threshold
+            ↓
+      H7 Persistence
+            ↓
+    Physical Threat Alert
 ```
 
-### Data partitioning recommendation
+------------------------------------------------------------------------
 
-The observations form a continuous time series and are temporally correlated. Randomly assigning individual 10-second windows to training and test sets can therefore cause temporal leakage and produce overly optimistic performance estimates.
+# Dataset
 
+The experiments use the publicly released **Marlinks-NS Distributed
+Acoustic Sensing dataset** for vessel detection and distance estimation
+in submarine optical-fiber cables.
 
+## Dataset Characteristics
 
-The reproducibility workflows follow the day-wise 10-fold, leave-one-day-out cross-validation strategy adopted in the associated studies. Each of the ten recording days defines one fold: in each cross-validation iteration, all observations from one complete day are held out for testing, while observations from the remaining nine days are used for model development. If a separate validation set is required, it should also be defined using temporally separated observations, preferably by holding out one or more complete training days.
+| Property                      |               Value |
+|-------------------------------|--------------------:|
+| Total raw observations        |          **74,771** |
+| Final evaluation observations |          **74,767** |
+| Spatial channels              |             **250** |
+| Frequency bands               |             **100** |
+| Source feature shape          |       **250 × 100** |
+| Frequency range               |         **4–98 Hz** |
+| Observation period            | **16–25 June 2023** |
+| Cable segment                 |         **2,553 m** |
+| Source temporal window        |      **10 seconds** |
+| Evaluation days               |              **10** |
 
-The ten folds correspond to the dataset recording days:
+Each source observation is represented as:
 
-```text
-2023-06-16
-2023-06-17
-2023-06-18
-2023-06-19
-2023-06-20
-2023-06-21
-2023-06-22
-2023-06-23
-2023-06-24
-2023-06-25
+``` text
+250 spatial channels × 100 frequency bands
 ```
 
-To ensure direct comparability with the associated studies, users are encouraged to retain the proposed day-wise partitioning strategy. If an alternative partitioning approach is adopted, it should preserve temporal separation between training and evaluation data, minimize temporal leakage, and be reported explicitly.
+The dataset contains:
 
+- DAS energy-band measurements
+- UTC timestamps
+- Vessel-distance information
+- Vessel metadata
 
-### Generation of a day-wise (k-fold) train/test split
+Three noisy spatial channels are excluded during processing:
 
-`src/load_and_split_dataset.py` loads `X`, `y`, `datetimes` and, when present, `ship_info`. It reserves all observations from the selected recording day for testing and uses the remaining days for training:
-
-```bash
-python src/load_and_split_dataset.py \
-  --h5_path /path/to/dataset_sensor_range_1440_1690_0.h5 \
-  --test_date 2023-06-16 \
-  --output_dir ./splits/
+``` text
+Channel 59
+Channel 60
+Channel 61
 ```
 
-The output directory contains:
+The frequency representation consists of 100 logarithmically spaced
+energy bands, excluding the 49–51 Hz region.
 
-- `X_train.npy` and `X_test.npy`.
-- `y_train.npy` and `y_test.npy`.
-- `datetimes_train.npy` and `datetimes_test.npy`.
-- When available, `ship_info_train.npz` and `ship_info_test.npz`.
+------------------------------------------------------------------------
 
-Use the HDF5 file downloaded from [Zenodo record](https://doi.org/10.5281/zenodo.15611778) for complete experiments.
+# Physical Threat Definition
 
-### Plot energy features and vessel distance
+The physical-threat classification task uses a **1,000 m proximity
+threshold**.
 
-`src/plot_energy_distance.py` generates a combined visualization of the energy-band features and vessel-distance labels. For example:
+``` text
+Class 0 → PHYSICAL THREAT
+           Vessel distance ≤ 1000 m
 
-```bash
-python src/plot_energy_distance.py \
-  --h5 data/reduced_dataset_sensor_range_1440_1690.h5 \
-  --time_interval 2023-06-16T15:55:00+00:00 2023-06-16T16:05:00+00:00 \
-  --save_dir data \
-  --remove_channels 59 60 61
+Class 1 → NON-THREAT
+           Vessel distance > 1000 m
 ```
 
-Example output:
+Because the threat class is **Class 0**, the primary operational metrics
+are reported from the threat perspective:
 
-![Energy-band features and closest-vessel distance](data/combined_plot_interval_20230616T155500_20230616T160500.png)
+- Threat Precision
+- Threat Recall
+- Threat F1
+- Missed Threats
+- False Proximity Alerts
 
-The Zenodo `src.zip` archive additionally provides small standalone examples for inspecting the HDF5 structure, loading all data or selected slices, checking consistency between full and sliced loading, and generating day-wise partitions.
+------------------------------------------------------------------------
 
-### Baseline AI/ML experiments (supporting the [JSTARS journal](#jstars-cite))
+# Experimental Protocol
 
-The public repository includes the experiment runner and the baseline XGBoost models for vessel detection (classification) and vessel-distance estimation (regression) that are referenced in the [JSTARS journal](#2.-ieee-jstars-accepted-article). The source code used in the paper experiments was heavily modified to ease its use and to be adapted to the current experimental framework distributed in this repository. We are also working in fixing inconsistencies and improving the general and specific capabitilities. This is the reason why there will be minor variations in the performance results reported. When possible, we will provide reproducibility scripts.
+## 10-Fold Leave-One-Day-Out Evaluation
 
-Run commands from the repository root after completing the [installation](#installation).
+DAS observations are temporally correlated. Randomly splitting
+individual observations can introduce temporal leakage by placing highly
+related measurements into both training and test sets.
 
-The included ten-minute HDF5 extract is useful for loading and plotting checks, but it does not contain the complete set of daily folds. Download the full dataset from [Zenodo](https://doi.org/10.5281/zenodo.15611778) before running the all-fold experiments, then either place it at `data/dataset_sensor_range_1440_1690_0.h5` or change `--h5_path` in the commands.
+This research uses:
 
-Start with these documents:
+> **10-fold leave-one-day-out cross-validation**
 
-| Guide                                                                  | Purpose                                                                    |
-|------------------------------------------------------------------------|----------------------------------------------------------------------------|
-| [Run experiments](docs/run-experiments.md) | Installation, baseline commands, result files, MLflow, and result analysis |
-| [Model reference](docs/model-reference.md) | Reference documentation for adding classification or regression models |
-| [Model tutorial](docs/model-tutorial.md) | Step-by-step model-development tutorial |
+Each complete recording day is treated as one independent test fold.
 
-The three maintained baseline launchers that replicate the best experiments in the [JSTARS journal](#2.-ieee-jstars-accepted-article) are:
+``` text
+Fold 1  → 2023-06-16
+Fold 2  → 2023-06-17
+Fold 3  → 2023-06-18
+Fold 4  → 2023-06-19
+Fold 5  → 2023-06-20
+Fold 6  → 2023-06-21
+Fold 7  → 2023-06-22
+Fold 8  → 2023-06-23
+Fold 9  → 2023-06-24
+Fold 10 → 2023-06-25
+```
 
-- `scripts/run_xgb_classif_baseline_all_folds-best.sh`: For threshold = 1,000 m, achieves global F1 = 90.11%, class 0 F1 = 84.23%, class 1 F1 = 92.93%, accuracy = 90.24%, and AUC = 94.42%.
-- `scripts/run_xgb_regress_baseline_all_folds-best-1000.sh`: For threshold = 1,000 m, achieves global MAE = 141 m.
-- `scripts/run_xgb_regress_baseline_all_folds-best-5000.sh`: For threshold = 5,000 m, achieves global MAE = 558 m.
+For every fold:
 
-Current date-range result files use `final_results` consistently for the principal global metrics in both tasks. Classification values are calculated from the summed fold confusion matrix (apart from mean fold AUC), and regression point estimates pool all evaluated frames; their 95% intervals resample complete folds. Regression additionally retains the separately labeled individual-frame bootstrap alternative in `frame_resampled_results`.
+``` text
+9 complete days → Training / model development
+1 complete day  → Completely unseen testing
+```
 
-They use:
+Final evaluation population:
 
-- `models/baseline_xgb_classification_model.py`;
-- `models/baseline_xgb_regression_model.py`;
-- `src/model_experiment_hdf5.py`.
+``` text
+74,767 observations
+```
 
+------------------------------------------------------------------------
 
+# Machine-Learning Model
 
-## Supplementary material
+The primary classification model is **XGBoost**.
 
-The [JSTARS paper supplementary website](https://geintra-uah.org/psi/index.html) provides additional material supporting the [JSTARS study](#jstars-cite), including visual demonstrations of the method under different conditions.
+## XGBoost Configuration
 
+``` text
+Objective       : binary:logistic
+Booster         : gbtree
+Learning Rate   : 0.05
+Maximum Depth   : 10
+Estimators      : 500
+Random Seed     : 42
+Tree Method     : hist
+Parallel Jobs   : 8
+```
 
+XGBoost is used as the primary nonlinear classifier for the engineered
+DAS representation and for fold-contained feature-importance ranking in
+H8.
 
-## How to cite
+------------------------------------------------------------------------
 
-If you use the dataset, repository software, methodology, experimental results or associated supplementary resources, please cite the following related research outputs:
+# Research Hypotheses
 
-- <a id="zenodo-cite"></a>The published [Marlinks-NS DAS dataset deposited in Zenodo](https://doi.org/10.5281/zenodo.15611778).
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, M. R. Fernández-Ruiz, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Marlinks-NS DAS Dataset for vessel detection and distance estimation using distributed acoustic sensing in submarine optical fiber cables”, Zenodo. doi: [10.5281/zenodo.15611778](https://doi.org/10.5281/zenodo.15611778)
-- <a id="jstars-cite">The accepted [IEEE JSTARS article](https://doi.org/10.1109/JSTARS.2026.3716768) describing our vessel-detection and localization methodology and experiments.
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, “Vessel Detection and Localization Using Distributed Acoustic Sensing in Submarine Optical Fiber Cables”. Accepted for publication in the IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing, 2026. doi: [10.1109/JSTARS.2026.3716768](https://doi.org/10.1109/JSTARS.2026.37167)
-- <a id="data-descriptor-cite">The [ArXiV preprint documenting and validating the Marlinks-NS dataset](https://doi.org/...) (submitted to be considered for publication as a Data Descriptor to the *Scientific Data* journal).
-> E. E. Ramirez-Torres, J. Macias-Guarasa, D. Pizarro, J. Tejedor, S. E. Palazuelos-Cagigas, P. J. Vidal-Moreno, S. Martin-Lopez, M. Gonzalez-Herraez and R. Vanthillo, *“A Distributed Acoustic Sensing Dataset for Vessel Detection and Localization in Submarine Cable Protection”*. ArXiv preprint arXiv:2509.11614. doi: [10.48550/arXiv.2607.28306](https://doi.org/10.48550/arXiv.2607.28306)
+The research consists of nine progressively developed hypotheses.
 
+------------------------------------------------------------------------
 
+# H1 — Spatial Distribution Features
 
-## Licenses
+## Hypothesis
 
-The components are distributed under separate licenses:
+> Preserving the spatial distribution of DAS energy across sensing
+> channels improves physical vessel-threat discrimination compared with
+> channel averaging.
 
-- **Repository software:** [GNU General Public License v3.0](LICENSE), as specified in the repository `LICENSE` file.
-- **Zenodo dataset:** [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/), as specified in the Zenodo record.
-- **Publications:** the license stated by the corresponding publisher or preprint platform.
+H1 calculates five spatial statistics for every frequency band:
 
-The demonstration HDF5 extract in this repository is data rather than software and is covered by the dataset license. Users should consult the applicable license files and records before redistribution or reuse.
+``` text
+Mean
+Standard Deviation
+Maximum
+Median
+Range
+```
 
+For each frame:
 
-## Funding and acknowledgements
+``` text
+250 channels × 100 frequency bands
+                ↓
+       5 spatial statistics
+                ↓
+           500 features
+```
 
-This work was partially supported by:
+Five consecutive frames produce:
 
-- The Spanish Ministry of Science and Innovation, MCIN/AEI/10.13039/501100011033, and the European Union NextGenerationEU/PRTR programme under grants PSI (PLEC2021-007875), REMO (CPP2021-008869), NeurEYE-UAH (PID2024-156576OB-C31), SEASNAKE+ (PCI2023-145978-2, from the CETPartnership 2022 joint call), MOTION (PID2022-140963OA-I00) and EYEFUL-UAH (PID2020-113118RB-C31).
-- The European Innovation Council under grants SAFE (101098992), SUBMERSE (101095055) and ECSTATIC (101189595).
-- The European Research Council under grant SENSE (101218803).
-- The University of Alcalá Research Programme through the FPI-2021 grant supporting P. J. Vidal-Moreno.
-- MCIN/AEI/10.13039/501100011033 and the European Union NextGenerationEU/PRTR under grant RYC2021-032167-I, supporting M. R. Fernández-Ruiz.
+``` text
+500 × 5 = 2500 features
+```
 
-The authors acknowledge the computing resources provided by Artemisa, funded by the European Union ERDF and Comunitat Valenciana, and the technical support provided by the Instituto de Física Corpuscular, IFIC (CSIC–University of Valencia).
+## H1 Results
 
-![Funding sources](logos/funding-logos.png)
+| Metric    |     Result |
+|-----------|-----------:|
+| Accuracy  | **90.54%** |
+| F1        | **90.43%** |
+| Threat F1 | **84.76%** |
+| ROC-AUC   | **94.73%** |
 
-## Disclaimer
+------------------------------------------------------------------------
 
-This repository contains research software and supporting documentation. Although the authors aim to provide correct and reproducible implementations, the software may contain bugs, incomplete features, or documentation errors. Results can depend on the dataset version, selected dates, class and threshold conventions, preprocessing, model configuration, random seeds, software dependencies, and evaluation options.
+# H2 — Spectral Descriptors
 
-Users are responsible for verifying that the code, metrics, confidence intervals, and generated artifacts are appropriate for their intended use. Results should be checked against the saved experiment metadata and, where relevant, independently reproduced before being used in scientific publications or operational decisions.
+## Hypothesis
 
-The software is provided without warranty under the terms of the repository license. It is not intended as a certified vessel-detection, navigation, safety, surveillance, or emergency-response system, and it must not be relied upon as the sole basis for operational or safety-critical decisions.
+> Adding compact spectral descriptors to the spatially preserved
+> representation improves physical vessel-threat discrimination.
 
-## Contact and issue reporting
+Five spectral descriptors are calculated for each frame:
 
-For questions about the dataset or the associated studies, please contact:
+``` text
+Spectral Centroid
+Spectral Spread
+Normalized Spectral Entropy
+85% Spectral Roll-off
+Spectral Slope
+```
 
-**Javier Macias-Guarasa**  
-Universidad de Alcalá  
-[javier.maciasguarasa@uah.es](mailto:javier.maciasguarasa@uah.es)
+H2 adds:
 
-For source-code issues, contributions, or feature requests, please use the repository [issue tracker](https://github.com/UAH-PSI/das-vessel-detection/issues). When reporting an issue, include the command executed, relevant input and output data and paths, the observed error, and sufficient information about the execution environment to reproduce it.
+``` text
+5 descriptors × 5 frames = 25 features
+```
 
-<!-- Local Variables: -->
-<!-- mode: markdown -->
-<!-- ispell-local-dictionary: "en_US" -->
-<!-- End: -->
+Resulting representation:
+
+``` text
+2500 H1 features
++ 25 H2 features
+----------------
+2525 features
+```
+
+## H2 Results
+
+| Metric    |     Result |
+|-----------|-----------:|
+| Accuracy  | **90.58%** |
+| F1        | **90.46%** |
+| Threat F1 | **84.81%** |
+| ROC-AUC   | **94.80%** |
+
+------------------------------------------------------------------------
+
+# H3 — Spatial Morphology and Coherence
+
+## Hypothesis
+
+> Explicitly modeling the spatial organization and adjacent-channel
+> coherence of DAS energy improves physical vessel-threat detection
+> beyond spatial and spectral statistics alone.
+
+H3 models:
+
+``` text
+Spatial Centroid
+Spatial Spread
+Spatial Entropy
+Spatial Gradient Energy
+Lag-1 Spatial Autocorrelation
+```
+
+Each descriptor is summarized over:
+
+``` text
+Low-frequency region
+Mid-frequency region
+High-frequency region
+Global Mean
+Global Standard Deviation
+```
+
+This produces:
+
+``` text
+5 descriptors × 5 summaries
+= 25 H3 features per frame
+```
+
+Across five frames:
+
+``` text
+25 × 5 = 125 H3 features
+```
+
+Combined H1–H3 representation:
+
+``` text
+H1 = 500 features/frame
+H2 =   5 features/frame
+H3 =  25 features/frame
+-------------------------
+     530 features/frame
+
+530 × 5 frames = 2650 features
+```
+
+## H3 Results
+
+| Metric         |     Result |
+|----------------|-----------:|
+| Accuracy       | **91.91%** |
+| F1             | **91.79%** |
+| Threat F1      | **86.85%** |
+| ROC-AUC        | **95.36%** |
+| False Alerts   |  **1,750** |
+| Missed Threats |  **4,295** |
+
+### H3 vs Baseline
+
+``` text
+Accuracy        +1.68 percentage points
+Threat F1       +2.62 percentage points
+ROC-AUC         +0.93 percentage points
+False Alerts    −802
+Missed Threats  −454
+```
+
+H3 produced the strongest improvement among the core
+representation-engineering hypotheses.
+
+------------------------------------------------------------------------
+
+# H4 — Temporal Dynamics
+
+## Hypothesis
+
+> Modeling how spatial and coherence descriptors evolve across
+> consecutive frames improves physical vessel-threat discrimination.
+
+H4 models the temporal evolution of the 25 H3 descriptors across five
+consecutive frames.
+
+Six temporal statistics are calculated:
+
+``` text
+Temporal Mean
+Temporal Standard Deviation
+Temporal Range
+Linear Temporal Slope
+Mean Absolute Frame-to-Frame Change
+Standard Deviation of Frame-to-Frame Change
+```
+
+This contributes:
+
+``` text
+25 descriptors × 6 statistics
+= 150 temporal features
+```
+
+Total H1–H4 representation:
+
+``` text
+2650 + 150 = 2800 features
+```
+
+## H4 Results
+
+| Metric         |     Result |
+|----------------|-----------:|
+| Accuracy       | **91.89%** |
+| F1             | **91.78%** |
+| Threat F1      | **86.87%** |
+| ROC-AUC        | **95.38%** |
+| False Alerts   |  **1,852** |
+| Missed Threats |  **4,206** |
+
+H4 is essentially neutral relative to H3 at the global level, but
+provides the temporally enriched representation used by subsequent
+experiments.
+
+------------------------------------------------------------------------
+
+# H5 — Distance-Aware Auxiliary Learning
+
+## Hypothesis
+
+> Incorporating continuous vessel-distance information as auxiliary
+> supervision can improve physical-threat discrimination compared with
+> treating the problem solely as binary proximity classification.
+
+The binary task only identifies whether a vessel is inside or outside
+the 1,000 m boundary.
+
+H5 introduces a separate auxiliary distance-prediction branch.
+
+## Leakage Prevention
+
+Ground-truth distance is **never directly supplied to the classifier**.
+
+Because:
+
+``` text
+Threat label = distance ≤ 1000 m
+```
+
+directly supplying the ground-truth distance would constitute target
+leakage.
+
+Instead:
+
+``` text
+DAS Representation
+       ↓
+Fold-contained Distance Model
+       ↓
+Predicted Distance
+       ↓
+Auxiliary Classifier Feature
+```
+
+The auxiliary branch uses the H3/H4-derived representation.
+
+A lightweight **Ridge Regression** model generates fold-contained
+predicted distances, which are then supplied as one additional
+classifier feature.
+
+H5 is treated as an **auxiliary-learning component** of the integrated
+system rather than as an independently reported headline improvement.
+
+------------------------------------------------------------------------
+
+# H6 — Probability Calibration and Threat-Aware Decision
+
+## Hypothesis
+
+> Calibrating classifier probabilities and applying a threat-aware
+> decision threshold can improve the reliability of physical-threat
+> alerts.
+
+XGBoost probabilities are calibrated using **Isotonic Regression**.
+
+``` text
+XGBoost Probability
+        ↓
+Isotonic Calibration
+        ↓
+Calibrated Threat Probability
+        ↓
+Threat-Aware Threshold
+        ↓
+Threat / Non-Threat Decision
+```
+
+Threshold selection is performed using validation data only.
+
+Validation constraint:
+
+``` text
+Minimum Threat Recall = 90%
+```
+
+The threshold-selection objective prioritizes maintaining high threat
+recall while reducing false proximity alerts.
+
+## Calibration Result
+
+``` text
+Raw Brier Score        = 0.06666
+Calibrated Brier Score = 0.06339
+```
+
+------------------------------------------------------------------------
+
+# H7 — Temporal Persistence
+
+## Hypothesis
+
+> Requiring physical-threat predictions to persist across consecutive
+> observations can suppress isolated false alarms while preserving
+> sustained vessel-threat events.
+
+Final persistence configuration:
+
+``` text
+Persistence Window = 3 observations
+Required Threats   = 2
+```
+
+Therefore:
+
+``` text
+2 of 3 consecutive observations
+        ↓
+Persistent Threat Event
+```
+
+Temporal persistence is applied independently within each recording day.
+No temporal state is carried across day boundaries.
+
+H7 is an **operational decision layer** rather than an additional raw
+feature block.
+
+------------------------------------------------------------------------
+
+# H8 — Feature Selection and XGBoost Refinement
+
+## Hypothesis
+
+> Removing redundant engineered features improves generalization and
+> reduces computational complexity without sacrificing threat-detection
+> performance.
+
+The H1–H4 representation contains:
+
+``` text
+2800 engineered features
+```
+
+H8 performs fold-contained feature selection using XGBoost feature
+importance.
+
+``` text
+Training Days
+     ↓
+XGBoost Feature Importance
+     ↓
+Feature Ranking
+     ↓
+Top-K Selection
+     ↓
+Fresh XGBoost Model
+     ↓
+Unseen Test Day
+```
+
+Evaluated feature budgets:
+
+``` text
+Top-500
+Top-1000
+Top-1500
+```
+
+## H8 Results
+
+| Representation | Features |   Accuracy |  Threat F1 |    ROC-AUC | False Alerts | Missed Threats |
+|----------------|---------:|-----------:|-----------:|-----------:|-------------:|---------------:|
+| Top-500        |      500 |     91.81% |     86.94% |     95.89% |        1,932 |          4,178 |
+| **Top-1000**   | **1000** | **91.84%** | **87.02%** | **95.92%** |    **1,918** |      **4,145** |
+| Top-1500       |     1500 |     91.93% |     87.08% |     96.00% |        1,863 |          4,175 |
+
+Top-1000 removes approximately:
+
+``` text
+64.3%
+```
+
+of the H1–H4 features while retaining comparable performance.
+
+For the final integrated evaluation, **Top-1000 was fixed as the
+selected feature budget**.
+
+------------------------------------------------------------------------
+
+# H9 — Higher-Order Temporal Dynamics
+
+## Hypothesis
+
+> Higher-order temporal derivatives of spatial/coherence features
+> provide complementary information for characterizing changing physical
+> DAS disturbances.
+
+H9 models first- and second-order temporal changes using:
+
+``` text
+Mean Absolute First Difference
+Maximum Absolute First Difference
+Mean Absolute Second Difference
+Maximum Absolute Second Difference
+```
+
+H9 contributes:
+
+``` text
+100 additional features
+```
+
+producing:
+
+``` text
+2800 + 100 = 2900 features
+```
+
+## H9 Results
+
+| Metric         |     Result |
+|----------------|-----------:|
+| Accuracy       | **91.91%** |
+| Threat F1      | **87.05%** |
+| Threat Recall  | **83.52%** |
+| ROC-AUC        | **96.00%** |
+| False Alerts   |  **1,845** |
+| Missed Threats |  **4,210** |
+
+------------------------------------------------------------------------
+
+# Final Integrated Model
+
+The final system integrates the research contributions in a staged
+architecture rather than blindly concatenating every experiment.
+
+``` text
+Original DAS Data
+        ↓
+Original Preprocessing
+        ↓
+H1 Spatial Features
+        ↓
+H2 Spectral Features
+        ↓
+H3 Spatial Morphology + Coherence
+        ↓
+H4 Temporal Dynamics
+        ↓
+H9 Higher-Order Temporal Dynamics
+        ↓
+2900-Dimensional Representation
+        ↓
+H8 Fold-Contained Feature Selection
+        ↓
+Top-1000 Features
+        ↓
+H5 Fold-Contained Distance Prediction
+        ↓
+XGBoost Classification
+        ↓
+H6 Isotonic Probability Calibration
+        ↓
+Threat-Aware Decision Threshold
+        ↓
+H7 2-of-3 Temporal Persistence
+        ↓
+FINAL PHYSICAL THREAT ALERT
+```
+
+### Final Architecture
+
+> **H1 + H2 + H3 + H4 + H9 → H8 → H5 → XGBoost → H6 → H7**
+
+------------------------------------------------------------------------
+
+# Final Model Configuration
+
+| Component               | Configuration                 |
+|-------------------------|-------------------------------|
+| Base representation     | H1 + H2 + H3 + H4 + H9        |
+| Base dimensionality     | **2,900**                     |
+| Feature selection       | H8                            |
+| Selected features       | **Top-1,000**                 |
+| Main classifier         | **XGBoost**                   |
+| Auxiliary model         | **Ridge Regression**          |
+| Probability calibration | **Isotonic Regression**       |
+| Threat class            | **Class 0**                   |
+| Threat boundary         | **1,000 m**                   |
+| Persistence window      | **3 observations**            |
+| Persistence requirement | **2 of 3**                    |
+| Cross-validation        | **10-fold leave-one-day-out** |
+| Random seed             | **42**                        |
+| XGBoost estimators      | **500**                       |
+| XGBoost learning rate   | **0.05**                      |
+| XGBoost max depth       | **10**                        |
+| XGBoost tree method     | **hist**                      |
+| XGBoost parallel jobs   | **8**                         |
+
+------------------------------------------------------------------------
+
+# Final Integrated Results
+
+The final H1–H9 system was evaluated across the complete **10-fold
+leave-one-day-out** protocol.
+
+## Headline Performance
+
+| Metric                     | Final Result |
+|----------------------------|-------------:|
+| **Accuracy**               |   **91.28%** |
+| **Threat Precision**       |   **87.66%** |
+| **Threat Recall**          |   **85.12%** |
+| **Threat F1**              |   **86.37%** |
+| **Non-Threat F1**          |   **93.59%** |
+| **Macro F1**               |   **89.98%** |
+| **Weighted F1**            |   **91.25%** |
+| **ROC-AUC**                |   **95.69%** |
+| **PR-AUC**                 |   **94.12%** |
+| **Raw Brier Score**        |  **0.06666** |
+| **Calibrated Brier Score** |  **0.06339** |
+
+------------------------------------------------------------------------
+
+# Final Threat Detection
+
+Final confusion matrix:
+
+``` text
+                         Predicted
+                    Threat   Non-Threat
+Actual Threat        20,655      3,610
+Actual Non-Threat     2,908     47,594
+```
+
+Therefore:
+
+``` text
+True Positives       = 20,655
+Missed Threats       =  3,610
+False Alerts         =  2,908
+True Negatives       = 47,594
+```
+
+Final threat-oriented performance:
+
+``` text
+Threat Precision = 87.66%
+Threat Recall    = 85.12%
+Threat F1        = 86.37%
+```
+
+------------------------------------------------------------------------
+
+# Baseline vs Final Model
+
+The original channel-averaged XGBoost classifier is used as the
+baseline.
+
+| Metric         | Baseline | Final H1–H9 |       Change |
+|----------------|---------:|------------:|-------------:|
+| Accuracy       |   90.23% |  **91.28%** | **+1.05 pp** |
+| Threat Recall  |   80.42% |  **85.12%** | **+4.70 pp** |
+| Threat F1      |   84.23% |  **86.37%** | **+2.14 pp** |
+| ROC-AUC        |   94.43% |  **95.69%** | **+1.26 pp** |
+| Missed Threats |    4,749 |   **3,610** |   **−1,139** |
+| False Alerts   |    2,552 |       2,908 |         +356 |
+
+The final model reduces missed threats:
+
+``` text
+4,749 → 3,610
+```
+
+This corresponds to:
+
+``` text
+1,139 fewer missed threats
+≈ 24.0% reduction
+```
+
+This improvement is accompanied by an increase in false proximity
+alerts:
+
+``` text
+2,552 → 2,908
+```
+
+The final model should therefore be interpreted as a stronger
+threat-oriented operating point rather than a universally optimal
+classifier at every possible decision threshold.
+
+------------------------------------------------------------------------
+
+# H1–H9 Experimental Summary
+
+| Hypothesis | Main Contribution              | Primary Role                     |
+|------------|--------------------------------|----------------------------------|
+| **H1**     | Spatial distribution           | Spatial representation           |
+| **H2**     | Spectral descriptors           | Spectral representation          |
+| **H3**     | Spatial morphology & coherence | Core representation contribution |
+| **H4**     | Temporal dynamics              | Temporal representation          |
+| **H5**     | Distance-aware learning        | Auxiliary supervision            |
+| **H6**     | Probability calibration        | Decision reliability             |
+| **H7**     | Temporal persistence           | Event-level decision logic       |
+| **H8**     | Feature selection              | Model refinement / efficiency    |
+| **H9**     | Higher-order temporal dynamics | Temporal refinement              |
+
+------------------------------------------------------------------------
+
+# Key Research Findings
+
+### 1. Spatial structure is informative
+
+H1 demonstrates that channel averaging discards useful spatial
+information contained in DAS measurements.
+
+### 2. Spectral information is complementary
+
+H2 provides an incremental improvement, indicating that spectral
+characteristics contain information beyond spatial statistics.
+
+### 3. Spatial morphology and coherence provide the strongest core improvement
+
+H3 produces the largest improvement among the core representation
+hypotheses, particularly reducing false proximity alerts.
+
+### 4. Temporal information provides additional context
+
+H4 captures how spatial and coherence features evolve across consecutive
+observations.
+
+### 5. Feature redundancy is substantial
+
+H8 demonstrates that a large fraction of engineered features can be
+removed while retaining comparable detection performance.
+
+### 6. Higher-order temporal information is useful
+
+H9 introduces first- and second-order temporal changes and improves
+discrimination relative to H4.
+
+### 7. Probability calibration improves reliability
+
+The Brier score decreases from:
+
+``` text
+Raw Brier Score        = 0.06666
+Calibrated Brier Score = 0.06339
+```
+
+### 8. Temporal persistence converts predictions into events
+
+H7 introduces an operational layer in which sustained physical
+disturbances are distinguished from isolated model predictions.
+
+------------------------------------------------------------------------
+
+# Leakage Prevention
+
+A central methodological requirement of this research is preventing
+target leakage.
+
+The ground-truth vessel distance is **not** directly provided to the
+binary classifier.
+
+Instead, H5 generates:
+
+``` text
+Training DAS Data
+       ↓
+Fold-contained distance model
+       ↓
+Predicted distance
+       ↓
+Binary classifier
+```
+
+For the integrated evaluation:
+
+- Outer test days remain completely unseen during model fitting.
+- Auxiliary distance predictions are generated fold-contained.
+- Feature selection is performed within the corresponding training data.
+- Calibration is fitted using validation predictions.
+- Decision thresholds are selected using validation data.
+- Temporal persistence is applied only to chronological test-day
+  predictions.
+- No temporal persistence state crosses day boundaries.
+
+------------------------------------------------------------------------
+
+# Computational Design
+
+The repository uses a memory-conscious preprocessing pipeline for the
+large DAS feature matrix.
+
+The raw feature matrix contains:
+
+``` text
+74,771 × 250 × 100
+```
+
+features.
+
+The experimental implementation uses `float32` representation for the
+loaded DAS matrix to reduce memory consumption while preserving the
+numerical structure required for the experiments.
+
+Feature extraction is performed progressively and the original
+high-dimensional matrix is released after reduction where possible.
+
+------------------------------------------------------------------------
+
+# Reproducibility
+
+The repository contains the implementation and experimental artifacts
+required to reproduce the research pipeline.
+
+The original DAS dataset is **not included in this repository**.
+
+After obtaining the dataset from its official distribution source, place
+the required HDF5 file under:
+
+``` text
+data/
+```
+
+Expected filename:
+
+``` text
+dataset_sensor_range_1440_1690_0.h5
+```
+
+Frequency-band definition:
+
+``` text
+data/fbands.csv
+```
+
+------------------------------------------------------------------------
+
+# Installation
+
+Clone the repository:
+
+``` bash
+git clone https://github.com/GaurishBudhiraja/DAS-Physical-Threat-Detection.git
+cd DAS-Physical-Threat-Detection
+```
+
+Create a Python virtual environment:
+
+``` bash
+python3 -m venv venv311
+source venv311/bin/activate
+```
+
+Install dependencies:
+
+``` bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+------------------------------------------------------------------------
+
+# Running the Experiments
+
+## Baseline
+
+``` bash
+bash scripts/run_xgb_classif_baseline_all_folds-best.sh
+```
+
+## H5 — Distance-Aware Learning
+
+``` bash
+python scripts/run_h5_distance_aware.py
+```
+
+## H6 — Probability Calibration
+
+``` bash
+python scripts/run_h6_probability_calibration.py
+```
+
+## H7 — Temporal Persistence
+
+``` bash
+python scripts/run_h7_temporal_persistence.py
+```
+
+## H5 + H6 + H7 Integrated Stage
+
+``` bash
+python scripts/run_h5_h6_h7_final.py
+```
+
+## H8 — Feature Selection
+
+``` bash
+python scripts/run_h8_feature_selection.py
+```
+
+## H9 — Higher-Order Temporal Dynamics
+
+``` bash
+python scripts/run_h9_multiscale_temporal.py
+```
+
+## Final H1–H9 Integrated Model
+
+``` bash
+python scripts/run_final_h1_h9_model.py
+```
+
+The final integrated experiment performs the complete outer **10-fold
+leave-one-day-out** evaluation.
+
+------------------------------------------------------------------------
+
+# Repository Structure
+
+``` text
+DAS-Physical-Threat-Detection/
+│
+├── data/
+│   └── fbands.csv
+│
+├── models/
+│   ├── baseline_xgb_classification_model.py
+│   └── baseline_xgb_regression_model.py
+│
+├── src/
+│   ├── data_splitter.py
+│   ├── data_splitter_hdf5.py
+│   ├── hdf5_data_loader.py
+│   ├── load_and_split_dataset.py
+│   ├── model_experiment_hdf5.py
+│   └── ...
+│
+├── scripts/
+│   ├── run_xgb_classif_baseline_all_folds-best.sh
+│   ├── run_h5_distance_aware.py
+│   ├── run_h6_probability_calibration.py
+│   ├── run_h7_temporal_persistence.py
+│   ├── run_h5_h6_h7_final.py
+│   ├── run_h8_feature_selection.py
+│   ├── run_h9_multiscale_temporal.py
+│   └── run_final_h1_h9_model.py
+│
+├── research/
+│   ├── baseline/
+│   ├── h1_metrics.csv
+│   ├── h2_metrics.csv
+│   ├── h3_metrics.csv
+│   ├── h4_metrics.csv
+│   ├── h8_feature_importance_fold_*.csv
+│   ├── final_feature_importance_fold_*.csv
+│   └── ...
+│
+├── results/
+│   └── ...
+│
+├── docs/
+│   └── ...
+│
+├── DATA_NOTES.md
+├── EXPERIMENT_LOG.md
+├── LITERATURE_MATRIX.md
+├── METHODOLOGY.md
+├── RESEARCH_PLAN.md
+├── requirements.txt
+├── LICENSE
+└── README.md
+```
+
+------------------------------------------------------------------------
+
+# Research Artifacts
+
+The repository contains experiment outputs for:
+
+``` text
+Baseline
+H1
+H2
+H3
+H4
+H5 + H6 + H7
+H8
+H9
+Final Integrated H1–H9 Model
+```
+
+Final research artifacts include:
+
+- Fold-level metrics
+- Per-day evaluation results
+- Final predictions
+- Feature-importance rankings
+- Confusion-matrix results
+- Calibration metrics
+- Model summaries
+- Research visualizations
+
+These artifacts are retained to support analysis and reproducibility of
+the reported experiments.
+
+------------------------------------------------------------------------
+
+# Research Visualizations
+
+The repository contains generated visualizations associated with the
+research experiments, including analysis of:
+
+- Model performance
+- Fold-level behavior
+- Feature importance
+- Threat detection performance
+- Final model behavior
+
+------------------------------------------------------------------------
+
+# Limitations
+
+This project represents a **research prototype**, not a
+production-certified submarine cable monitoring system.
+
+Important limitations include:
+
+- Evaluation is based on a specific DAS dataset and cable segment.
+- The observation period is limited.
+- Generalization to other submarine cables requires additional
+  validation.
+- Vessel-distance labels depend on the underlying dataset and associated
+  vessel information.
+- The physical-threat boundary is fixed at 1,000 m for this study.
+- Environmental conditions can influence DAS measurements.
+- False proximity alerts remain present.
+- The final model has not been validated in an operational deployment.
+- Cross-cable and cross-domain generalization remain open research
+  problems.
+- The current study evaluates physical vessel threats rather than
+  arbitrary underwater or cable-interaction events.
+
+The reported results should therefore be interpreted as **experimental
+evidence on the evaluated dataset**, rather than a guarantee of
+identical performance in operational environments.
+
+------------------------------------------------------------------------
+
+# Research Contribution
+
+The principal contribution of this research is an integrated
+physical-threat detection framework that extends conventional
+channel-averaged DAS classification by modeling:
+
+``` text
+Spatial Distribution
+        +
+Spectral Characteristics
+        +
+Spatial Morphology
+        +
+Adjacent-Channel Coherence
+        +
+Temporal Dynamics
+        +
+Higher-Order Temporal Changes
+        +
+Distance-Aware Auxiliary Information
+        +
+Feature Selection
+        +
+Probability Calibration
+        +
+Temporal Persistence
+```
+
+The strongest representation-level improvement is obtained through **H3
+spatial morphology and coherence features**, while the complete H1–H9
+pipeline combines representation engineering, feature refinement,
+auxiliary supervision, calibrated probability estimation, and temporal
+decision logic.
+
+------------------------------------------------------------------------
+
+# Research Foundation and Attribution
+
+This research uses an existing open-source DAS vessel-detection
+implementation and publicly released DAS dataset as the technical and
+reproducibility foundation.
+
+The present repository substantially extends that foundation through:
+
+- The H1–H9 research framework
+- Spatial feature engineering
+- Spectral feature engineering
+- Spatial morphology descriptors
+- Channel-coherence descriptors
+- Temporal feature engineering
+- Higher-order temporal dynamics
+- Distance-aware auxiliary learning
+- Fold-contained feature selection
+- Probability calibration
+- Threat-aware threshold selection
+- Temporal persistence
+- Integrated 10-fold evaluation
+- Research-specific experiment scripts
+- Research-specific analysis artifacts
+
+Original open-source implementation used as the starting technical
+foundation:
+
+https://github.com/UAH-PSI/das-vessel-detection
+
+Underlying dataset:
+
+**Marlinks-NS DAS Dataset**
+
+Dataset DOI:
+
+**10.5281/zenodo.15611778**
+
+Associated publication DOI:
+
+**10.1109/JSTARS.2026.3716768**
+
+Associated preprint DOI:
+
+**10.48550/arXiv.2607.28306**
+
+The original implementation, dataset, and associated publication should
+be appropriately cited when their work is used or referenced.
+
+------------------------------------------------------------------------
+
+# Academic Citation
+
+If referencing this research implementation:
+
+``` text
+Gaurish Budhiraja,
+"DAS Physical Threat Detection for Submarine Optical-Fiber Cables:
+A Spatiotemporal Machine-Learning Framework for Physical Vessel-Threat
+Detection Using Distributed Acoustic Sensing."
+Research Implementation, 2026.
+```
+
+For the underlying DAS dataset and original vessel-detection
+methodology, please additionally cite the original dataset and
+publication identified above.
+
+------------------------------------------------------------------------
+
+# License
+
+This repository is distributed under the:
+
+**GNU General Public License v3.0 (GPLv3)**
+
+See:
+
+``` text
+LICENSE
+```
+
+Dataset licensing remains subject to the terms of the original dataset
+distribution.
+
+------------------------------------------------------------------------
+
+# Author
+
+## Gaurish Budhiraja
+
+**B.Tech Computer Science and Engineering**  
+**Vellore Institute of Technology**  
+**Chennai, India**
+
+### Research Interests
+
+``` text
+Distributed Acoustic Sensing
+Machine Learning
+Submarine Cable Protection
+Physical Threat Detection
+Signal Processing
+Cybersecurity
+AI Systems
+```
+
+### GitHub
+
+https://github.com/GaurishBudhiraja
+
+------------------------------------------------------------------------
+
+<p align="center">
+
+## DAS Physical Threat Detection
+
+### H1–H9 Spatiotemporal Research Framework
+
+**Machine-learning-based physical vessel-threat detection using
+Distributed Acoustic Sensing.**
+
+</p>
